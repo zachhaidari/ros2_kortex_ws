@@ -1,0 +1,171 @@
+# ROS2 Kortex Workspace - Kinova Gen3 Lite Pick and Place Demo
+
+This repository contains a ROS2 Jazzy workspace for simulating and controlling the **Kinova Gen3 Lite** robot with a custom pick-and-place demonstration using MoveIt2 motion planning.
+
+## 🎯 What Was Changed from Original ros2_kortex
+
+### Custom Additions
+
+1. **`pick_and_place_demo.py`** - A complete pick-and-place demo script that:
+   - Uses MoveIt2 motion planning with RRTstar planner for optimal paths
+   - Implements joint-space planning to avoid arm spinning issues
+   - Picks up 4 colored objects (red cube, blue cylinder, green sphere, yellow cube)
+   - Places objects into a basket with individual drop positions
+   - Includes collision-aware path planning
+
+2. **`pick_and_place.sdf`** - Custom Gazebo world file containing:
+   - A table with the robot mounted
+   - 4 colored objects (cubes, cylinder, sphere) for picking
+   - A basket for placing objects
+   - Proper physics and collision properties
+
+3. **`clear_faults.py`** - Utility script to clear robot faults when connecting to real hardware
+
+### Key Modifications
+
+- **Home position**: Changed from `[0,0,0,0,0,0]` to `[0, -π/4, π/4, 0, 0, 0]` for gripper parallel to table
+- **Motion planning**: Uses joint-space constraints instead of pose-based goals to prevent spinning
+- **Planner**: RRTstar with 60 planning attempts for optimal path finding
+
+## 📋 Prerequisites
+
+- Ubuntu 24.04
+- ROS2 Jazzy
+- Gazebo Harmonic (gz-sim)
+- MoveIt2
+
+## 🚀 Quick Start - Simulation
+
+### Terminal 1: Launch Gazebo Simulation
+```bash
+cd ~/ros2_kortex_ws
+source install/setup.bash
+ros2 launch kortex_bringup kortex_sim_control.launch.py \
+    dof:=6 \
+    name:=gen3_lite \
+    robot_type:=gen3_lite \
+    gripper:=gen3_lite_2f \
+    sim_gazebo:=true \
+    use_sim_time:=true \
+    launch_rviz:=false \
+    world:=pick_and_place.sdf
+```
+
+### Terminal 2: Launch MoveIt
+```bash
+cd ~/ros2_kortex_ws
+source install/setup.bash
+ros2 launch kinova_gen3_lite_moveit_config sim.launch.py use_sim_time:=true
+```
+
+### Terminal 3: Run Pick and Place Demo
+```bash
+cd ~/ros2_kortex_ws
+source install/setup.bash
+ros2 run kortex_bringup pick_and_place_demo.py
+```
+
+## 🤖 Real Robot Connection
+
+### 1. Network Setup
+Ensure your computer is on the same subnet as the robot:
+```bash
+# Robot default IP: 192.168.1.10
+# Set your computer to: 192.168.1.x (e.g., 192.168.1.100)
+sudo ip addr add 192.168.1.100/24 dev eth0
+```
+
+### 2. Test Connection
+```bash
+ping 192.168.1.10
+```
+
+### 3. Clear Faults (if robot light is red)
+```bash
+python3 src/ros2_kortex/kortex_moveit_config/kinova_gen3_lite_moveit_config/launch/clear_faults.py
+```
+
+### 4. Launch Real Robot
+```bash
+source install/setup.bash
+ros2 launch kinova_gen3_lite_moveit_config robot.launch.py \
+    robot_ip:=192.168.1.10 \
+    use_fake_hardware:=false \
+    launch_rviz:=true
+```
+
+## 📁 Key Files
+
+| File | Location | Description |
+|------|----------|-------------|
+| `pick_and_place_demo.py` | `src/ros2_kortex/kortex_bringup/scripts/` | Main demo script |
+| `pick_and_place.sdf` | `src/ros2_kortex/kortex_bringup/worlds/` | Gazebo world file |
+| `clear_faults.py` | `src/ros2_kortex/kortex_moveit_config/kinova_gen3_lite_moveit_config/launch/` | Fault clearing utility |
+
+## 🔧 Building from Source
+
+```bash
+cd ~/ros2_kortex_ws
+colcon build --symlink-install
+source install/setup.bash
+```
+
+## 🧮 Forward Kinematics
+
+The FK was validated against Gazebo simulation:
+
+| Joint Configuration | End-Effector Position | Gripper Orientation |
+|---------------------|----------------------|---------------------|
+| `[0, 0, 0, 0, 0, 0]` | (0.057, -0.010, 1.003) m | Pointing UP |
+| `[0, -π/4, π/4, 0, 0, 0]` | (0.678, -0.010, 0.384) m | Horizontal (parallel to table) |
+
+## 🎮 Demo Sequence
+
+The pick-and-place demo performs the following for each object:
+1. Move to home position (gripper horizontal)
+2. Open gripper
+3. Move to pre-grasp position above object
+4. Lower to grasp position
+5. Close gripper
+6. Lift object
+7. Move above basket
+8. Lower into basket
+9. Release object
+10. Repeat for next object
+
+## ⚠️ Troubleshooting
+
+### Robot Light Colors
+- **Blue**: Ready
+- **Green**: Operating normally
+- **Red**: Fault - run `clear_faults.py`
+- **Blinking**: Boot sequence or update
+
+### Common Issues
+
+1. **IK Failures (-31 NO_IK_SOLUTION)**
+   - Objects may be outside robot workspace
+   - Reduce lift height or move objects closer
+
+2. **Arm Spinning**
+   - Solved by using joint-space planning instead of pose-based goals
+
+3. **Planning Failures**
+   - Increase `num_planning_attempts` in demo script
+   - Check collision geometry in RViz
+
+## 📚 References
+
+- [Kinova Gen3 Lite User Guide](https://www.kinovarobotics.com/)
+- [ros2_kortex Repository](https://github.com/Kinovarobotics/ros2_kortex)
+- [MoveIt2 Documentation](https://moveit.picknik.ai/)
+
+## 👥 Authors
+
+- Zach Haidari
+- Ryan Cullen  
+- Long Yin
+
+## 📄 License
+
+See individual package licenses in the `src/` directory.
