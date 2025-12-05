@@ -1,0 +1,165 @@
+--- JOINT_STATES (once) ---
+A message was lost!!!
+	total count change:1
+	total count: 1---
+header:
+  stamp:
+    sec: 327
+    nanosec: 29000000
+  frame_id: base_link
+name:
+- joint_1
+- joint_2
+- joint_3
+- joint_4
+- joint_5
+- joint_6
+- right_finger_bottom_joint
+position:
+- 0.4488392770290375
+- -0.008714551106095314
+- 1.5001190900802612
+- -1.5707608461380005
+- 1.5087065696716309
+- 1.1218823194503784
+- 0.10640842467546463
+velocity:
+- 1.2063886970281601e-05
+- -2.528540790081024e-07
+- 5.303323268890381e-05
+- -5.595758557319641e-05
+- 5.112960934638977e-05
+- 5.155755206942558e-05
+- 3.471970558166504e-06
+effort:
+- -1.3282115305773914
+- -0.40244948863983154
+- 2.566868305206299
+- -0.00933479517698288
+- -0.056719355285167694
+- 0.0010340873850509524
+- .nan
+---
+--- CONTROLLERS ---
+waiting for service to become available...
+requester: making request: controller_manager_msgs.srv.ListControllers_Request()
+
+response:
+controller_manager_msgs.srv.ListControllers_Response(controller=[controller_manager_msgs.msg.ControllerState(name='gen3_lite_2f_gripper_controller', state='active', type='position_controllers/GripperActionController', is_async=False, update_rate=1000, claimed_interfaces=['right_finger_bottom_joint/position'], required_command_interfaces=['right_finger_bottom_joint/position'], required_state_interfaces=['right_finger_bottom_joint/position', 'right_finger_bottom_joint/velocity'], is_chainable=False, is_chained=False, exported_state_interfaces=[], reference_interfaces=[], chain_connections=[]), controller_manager_msgs.msg.ControllerState(name='twist_controller', state='inactive', type='picknik_twist_controller/PicknikTwistController', is_async=False, update_rate=1000, claimed_interfaces=[], required_command_interfaces=['tcp/twist.linear.x', 'tcp/twist.linear.y', 'tcp/twist.linear.z', 'tcp/twist.angular.x', 'tcp/twist.angular.y', 'tcp/twist.angular.z'], required_state_interfaces=[], is_chainable=False, is_chained=False, exported_state_interfaces=[], reference_interfaces=[], chain_connections=[]), controller_manager_msgs.msg.ControllerState(name='joint_trajectory_controller', state='active', type='joint_trajectory_controller/JointTrajectoryController', is_async=False, update_rate=1000, claimed_interfaces=['joint_1/position', 'joint_2/position', 'joint_3/position', 'joint_4/position', 'joint_5/position', 'joint_6/position'], required_command_interfaces=['joint_1/position', 'joint_2/position', 'joint_3/position', 'joint_4/position', 'joint_5/position', 'joint_6/position'], required_state_interfaces=['joint_1/position', 'joint_1/velocity', 'joint_2/position', 'joint_2/velocity', 'joint_3/position', 'joint_3/velocity', 'joint_4/position', 'joint_4/velocity', 'joint_5/position', 'joint_5/velocity', 'joint_6/position', 'joint_6/velocity'], is_chainable=False, is_chained=False, exported_state_interfaces=[], reference_interfaces=[], chain_connections=[]), controller_manager_msgs.msg.ControllerState(name='joint_state_broadcaster', state='active', type='joint_state_broadcaster/JointStateBroadcaster', is_async=False, update_rate=1000, claimed_interfaces=[], required_command_interfaces=[], required_state_interfaces=['joint_1/effort', 'joint_1/position', 'joint_1/velocity', 'joint_2/effort', 'joint_2/position', 'joint_2/velocity', 'joint_3/effort', 'joint_3/position', 'joint_3/velocity', 'joint_4/effort', 'joint_4/position', 'joint_4/velocity', 'joint_5/effort', 'joint_5/position', 'joint_5/velocity', 'joint_6/effort', 'joint_6/position', 'joint_6/velocity', 'right_finger_bottom_joint/position', 'right_finger_bottom_joint/velocity'], is_chainable=False, is_chained=False, exported_state_interfaces=[], reference_interfaces=[], chain_connections=[])])
+
+--- SEND GOAL: open 0.03
+Waiting for an action server to become available...
+Sending goal:
+     command:
+  position: 0.03
+  max_effort: 1.0
+
+Goal accepted with ID: b77e32fff0594b808e2807d8819ebdc0
+
+Result:
+    position: 0.0398082509636879
+effort: 1.0
+stalled: false
+reached_goal: true
+
+Goal finished with status: SUCCEEDED
+--- JOINT_STATES (after open) ---
+A message was lost!!!
+	total count change:1
+	total count: 1---
+header:
+  stamp:
+    sec: 331
+    nanosec: 310000000
+  frame_id: base_link
+name:
+- joint_1
+- joint_2
+- joint_3
+- joint_4
+- joint_5
+- joint_6
+- right_finger_bottom_joint
+position:
+- 0.4488392770290375
+- -0.00871455017477274
+- 1.5001190900802612
+- -1.5707608461380005
+- 1.5087065696716309
+- 1.1218823194503784
+- 0.030000019818544388
+velocity:
+- 1.2026051990687847e-05
+- -3.504101186990738e-07
+- 5.3027644753456116e-05
+- -5.595758557319641e-05
+- 5.110353231430054e-05
+- 5.158223211765289e-05
+- -9.08970832824707e-07
+effort:
+- -1.3288338030688465
+- -0.4024532437324524
+- 2.5669285655021667
+- -0.009667713195085526
+- -0.05677099898457527
+- 0.0009643634548410773
+- .nan
+---
+--- SEND GOAL: close 0.0
+Waiting for an action server to become available...
+Sending goal:
+     command:
+  position: 0.0
+  max_effort: 1.0
+
+Goal accepted with ID: 426fd6a924b24228b6059111b34deea2
+
+Result:
+    position: -0.00016338385466951877
+effort: 0.0
+stalled: false
+reached_goal: true
+
+Goal finished with status: SUCCEEDED
+--- JOINT_STATES (after close) ---
+A message was lost!!!
+	total count change:1
+	total count: 1---
+header:
+  stamp:
+    sec: 337
+    nanosec: 431000000
+  frame_id: base_link
+name:
+- joint_1
+- joint_2
+- joint_3
+- joint_4
+- joint_5
+- joint_6
+- right_finger_bottom_joint
+position:
+- 0.4488392770290375
+- -0.00871455017477274
+- 1.5001190900802612
+- -1.5707608461380005
+- 1.5087065696716309
+- 1.1218823194503784
+- 3.4339961985097034e-08
+velocity:
+- 1.2010685168206692e-05
+- -3.4994445741176605e-07
+- 5.3025782108306885e-05
+- -5.595758557319641e-05
+- 5.1099807024002075e-05
+- 5.159107968211174e-05
+- 7.450580596923828e-09
+effort:
+- -1.3291134685277939
+- -0.4024566411972046
+- 2.566949963569641
+- -0.009811248630285263
+- -0.05678700655698776
+- 0.0009188099065795541
+- .nan
+---

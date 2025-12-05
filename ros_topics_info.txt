@@ -1,0 +1,120 @@
+Type: moveit_msgs/msg/AttachedCollisionObject
+Publisher count: 1
+Subscription count: 1
+Type: rosgraph_msgs/msg/Clock
+Publisher count: 1
+Subscription count: 19
+Type: moveit_msgs/msg/CollisionObject
+Publisher count: 0
+Subscription count: 1
+Type: controller_manager_msgs/msg/ControllerManagerActivity
+Publisher count: 1
+Subscription count: 0
+Type: pal_statistics_msgs/msg/Statistics
+Publisher count: 1
+Subscription count: 0
+Type: pal_statistics_msgs/msg/StatisticsNames
+Publisher count: 1
+Subscription count: 0
+Type: pal_statistics_msgs/msg/StatisticsValues
+Publisher count: 1
+Subscription count: 0
+Type: pal_statistics_msgs/msg/Statistics
+Publisher count: 1
+Subscription count: 0
+Type: pal_statistics_msgs/msg/StatisticsNames
+Publisher count: 1
+Subscription count: 0
+Type: pal_statistics_msgs/msg/StatisticsValues
+Publisher count: 1
+Subscription count: 0
+Type: diagnostic_msgs/msg/DiagnosticArray
+Publisher count: 1
+Subscription count: 0
+Type: visualization_msgs/msg/MarkerArray
+Publisher count: 2
+Subscription count: 0
+Type: moveit_msgs/msg/DisplayTrajectory
+Publisher count: 3
+Subscription count: 1
+Type: control_msgs/msg/DynamicJointState
+Publisher count: 1
+Subscription count: 0
+Type: lifecycle_msgs/msg/TransitionEvent
+Publisher count: 1
+Subscription count: 0
+Type: lifecycle_msgs/msg/TransitionEvent
+Publisher count: 1
+Subscription count: 0
+Type: sensor_msgs/msg/JointState
+Publisher count: 1
+Subscription count: 2
+Type: control_msgs/msg/JointTrajectoryControllerState
+Publisher count: 1
+Subscription count: 0
+Type: trajectory_msgs/msg/JointTrajectory
+Publisher count: 0
+Subscription count: 1
+Type: lifecycle_msgs/msg/TransitionEvent
+Publisher count: 1
+Subscription count: 0
+Type: moveit_msgs/msg/PlanningScene
+Publisher count: 1
+Subscription count: 1
+Type: rcl_interfaces/msg/ParameterEvent
+Publisher count: 19
+Subscription count: 22
+Type: moveit_msgs/msg/PipelineState
+Publisher count: 2
+Subscription count: 0
+Type: moveit_msgs/msg/PlanningScene
+Publisher count: 1
+Subscription count: 1
+Type: moveit_msgs/msg/PlanningSceneWorld
+Publisher count: 1
+Subscription count: 1
+Type: object_recognition_msgs/msg/RecognizedObjectArray
+Publisher count: 0
+Subscription count: 1
+Type: std_msgs/msg/String
+Publisher count: 2
+Subscription count: 1
+Type: std_msgs/msg/String
+Publisher count: 1
+Subscription count: 0
+Type: rcl_interfaces/msg/Log
+Publisher count: 21
+Subscription count: 0
+Type: visualization_msgs/msg/InteractiveMarkerFeedback
+Publisher count: 1
+Subscription count: 1
+Type: visualization_msgs/msg/InteractiveMarkerUpdate
+Publisher count: 1
+Subscription count: 1
+Type: tf2_msgs/msg/TFMessage
+Publisher count: 1
+Subscription count: 3
+Type: tf2_msgs/msg/TFMessage
+Publisher count: 1
+Subscription count: 3
+Type: std_msgs/msg/String
+Publisher count: 1
+Subscription count: 1
+Type: geometry_msgs/msg/Twist
+Publisher count: 0
+Subscription count: 1
+Type: lifecycle_msgs/msg/TransitionEvent
+Publisher count: 1
+Subscription count: 0
+Type: sensor_msgs/msg/CameraInfo
+Publisher count: 1
+Subscription count: 0
+Type: sensor_msgs/msg/Image
+Publisher count: 1
+Subscription count: 0
+Type: sensor_msgs/msg/Image
+Publisher count: 1
+Subscription count: 0
+Type: sensor_msgs/msg/PointCloud2
+Publisher count: 1
+Subscription count: 0

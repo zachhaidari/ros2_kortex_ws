@@ -1,0 +1,583 @@
+<?xml version="1.0" ?>
+<!--
+  Gazebo world for Kinova Gen3 Lite pick-and-place demo.
+  
+  Coordinate System Notes:
+  - Robot base spawns at world (0, 0, 0.3)
+  - Table top is at world z=0.35, which is z=0.05 in robot base_link frame
+  - Objects on table: world_z = 0.35 + half_object_height
+  - MoveIt plans in base_link frame, so target z = world_z - 0.3
+  
+  Object sizes (all graspable by gen3_lite_2f gripper with 85mm stroke):
+  - Cubes: 50mm (increased from 40mm for easier grasping)
+  - Cylinder: 45mm diameter x 60mm height
+  - Sphere: 50mm diameter
+  
+  To use: ros2 launch kortex_bringup kortex_sim_control.launch.py \
+    ... world:=pick_and_place.sdf
+-->
+<sdf version="1.6">
+  <world name="pick_and_place">
+    
+    <!-- Physics settings optimized for manipulation -->
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    
+    <!-- Required Gazebo plugins -->
+    <plugin
+      filename="gz-sim-physics-system"
+      name="gz::sim::systems::Physics">
+    </plugin>
+    <plugin
+      filename="gz-sim-user-commands-system"
+      name="gz::sim::systems::UserCommands">
+    </plugin>
+    <plugin
+      filename="gz-sim-scene-broadcaster-system"
+      name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+    <plugin
+      filename="gz-sim-contact-system"
+      name="gz::sim::systems::Contact">
+    </plugin>
+    <plugin
+      filename="gz-sim-sensors-system"
+      name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <!-- Sunlight -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.3 0.3 0.3 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+    
+    <!-- Ambient light for better visibility -->
+    <light type="directional" name="fill_light">
+      <cast_shadows>false</cast_shadows>
+      <pose>0 0 8 0 0 0</pose>
+      <diffuse>0.4 0.4 0.4 1</diffuse>
+      <specular>0.1 0.1 0.1 1</specular>
+      <direction>0.5 -0.3 -0.8</direction>
+    </light>
+
+    <!-- Ground plane -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================== -->
+    <!-- WORKSPACE TABLE - Larger: 1.0m x 0.8m         -->
+    <!-- Centered at x=0.45 in front of robot          -->
+    <!-- Table top at world z=0.35 (robot z=0.05)      -->
+    <!-- ============================================== -->
+    <model name="workspace_table">
+      <static>true</static>
+      <pose>0.45 0 0 0 0 0</pose>
+      <link name="table_link">
+        <!-- Table top - LARGER: 1.0m x 0.8m -->
+        <collision name="table_top_collision">
+          <pose>0 0 0.35 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.0 0.8 0.03</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.8</mu>
+                <mu2>0.8</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="table_top_visual">
+          <pose>0 0 0.35 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.0 0.8 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.4 0.2 1</ambient>
+            <diffuse>0.7 0.5 0.3 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
+        </visual>
+        <!-- Table legs - adjusted for larger table -->
+        <collision name="leg1_collision">
+          <pose>0.45 0.35 0.17 0 0 0</pose>
+          <geometry>
+            <box><size>0.05 0.05 0.34</size></box>
+          </geometry>
+        </collision>
+        <visual name="leg1_visual">
+          <pose>0.45 0.35 0.17 0 0 0</pose>
+          <geometry>
+            <box><size>0.05 0.05 0.34</size></box>
+          </geometry>
+          <material>
+            <ambient>0.4 0.3 0.2 1</ambient>
+            <diffuse>0.5 0.4 0.3 1</diffuse>
+          </material>
+        </visual>
+        <collision name="leg2_collision">
+          <pose>0.45 -0.35 0.17 0 0 0</pose>
+          <geometry>
+            <box><size>0.05 0.05 0.34</size></box>
+          </geometry>
+        </collision>
+        <visual name="leg2_visual">
+          <pose>0.45 -0.35 0.17 0 0 0</pose>
+          <geometry>
+            <box><size>0.05 0.05 0.34</size></box>
+          </geometry>
+          <material>
+            <ambient>0.4 0.3 0.2 1</ambient>
+            <diffuse>0.5 0.4 0.3 1</diffuse>
+          </material>
+        </visual>
+        <collision name="leg3_collision">
+          <pose>-0.45 0.35 0.17 0 0 0</pose>
+          <geometry>
+            <box><size>0.05 0.05 0.34</size></box>
+          </geometry>
+        </collision>
+        <visual name="leg3_visual">
+          <pose>-0.45 0.35 0.17 0 0 0</pose>
+          <geometry>
+            <box><size>0.05 0.05 0.34</size></box>
+          </geometry>
+          <material>
+            <ambient>0.4 0.3 0.2 1</ambient>
+            <diffuse>0.5 0.4 0.3 1</diffuse>
+          </material>
+        </visual>
+        <collision name="leg4_collision">
+          <pose>-0.45 -0.35 0.17 0 0 0</pose>
+          <geometry>
+            <box><size>0.05 0.05 0.34</size></box>
+          </geometry>
+        </collision>
+        <visual name="leg4_visual">
+          <pose>-0.45 -0.35 0.17 0 0 0</pose>
+          <geometry>
+            <box><size>0.05 0.05 0.34</size></box>
+          </geometry>
+          <material>
+            <ambient>0.4 0.3 0.2 1</ambient>
+            <diffuse>0.5 0.4 0.3 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================== -->
+    <!-- BASKET - Larger: 30cm x 20cm x 10cm high      -->
+    <!-- World position: (0.35, -0.20, 0.365)          -->
+    <!-- Robot frame: (0.35, -0.20, 0.0)               -->
+    <!-- ============================================== -->
+    <model name="basket">
+      <static>true</static>
+      <pose>0.35 -0.20 0.365 0 0 0</pose>
+      <link name="basket_link">
+        <!-- Bottom -->
+        <collision name="bottom_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box><size>0.30 0.20 0.008</size></box>
+          </geometry>
+        </collision>
+        <visual name="bottom_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box><size>0.30 0.20 0.008</size></box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.4 0.2 1</ambient>
+            <diffuse>0.3 0.6 0.3 1</diffuse>
+          </material>
+        </visual>
+        <!-- Front wall -->
+        <collision name="front_collision">
+          <pose>0.15 0 0.05 0 0 0</pose>
+          <geometry>
+            <box><size>0.008 0.20 0.10</size></box>
+          </geometry>
+        </collision>
+        <visual name="front_visual">
+          <pose>0.15 0 0.05 0 0 0</pose>
+          <geometry>
+            <box><size>0.008 0.20 0.10</size></box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.4 0.2 1</ambient>
+            <diffuse>0.3 0.6 0.3 1</diffuse>
+          </material>
+        </visual>
+        <!-- Back wall -->
+        <collision name="back_collision">
+          <pose>-0.15 0 0.08 0 0 0</pose>
+          <geometry>
+            <box><size>0.008 0.20 0.10</size></box>
+          </geometry>
+        </collision>
+        <visual name="back_visual">
+          <pose>-0.15 0 0.05 0 0 0</pose>
+          <geometry>
+            <box><size>0.008 0.20 0.10</size></box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.4 0.2 1</ambient>
+            <diffuse>0.3 0.6 0.3 1</diffuse>
+          </material>
+        </visual>
+        <!-- Left wall -->
+        <collision name="left_collision">
+          <pose>0 0.096 0.05 0 0 0</pose>
+          <geometry>
+            <box><size>0.3 0.008 0.10</size></box>
+          </geometry>
+        </collision>
+        <visual name="left_visual">
+          <pose>0 0.096 0.05 0 0 0</pose>
+          <geometry>
+            <box><size>0.3 0.008 0.10</size></box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.4 0.2 1</ambient>
+            <diffuse>0.3 0.6 0.3 1</diffuse>
+          </material>
+        </visual>
+        <!-- Right wall -->
+        <collision name="right_collision">
+          <pose>0 -0.096 0.05 0 0 0</pose>
+          <geometry>
+            <box><size>0.30 0.008 0.10</size></box>
+          </geometry>
+        </collision>
+        <visual name="right_visual">
+          <pose>0 -0.096 0.05 0 0 0</pose>
+          <geometry>
+            <box><size>0.30 0.008 0.10</size></box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.4 0.2 1</ambient>
+            <diffuse>0.3 0.6 0.3 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================== -->
+    <!-- PICK STATION 1: RED CUBE - 50mm               -->
+    <!-- World position: (0.35, 0.25, 0.375)           -->
+    <!-- Robot frame: (0.35, 0.25, 0.075)              -->
+    <!-- Table z=0.35 + half_cube(0.025) = 0.375       -->
+    <!-- ============================================== -->
+    <model name="red_cube">
+      <pose>0.25 0.25 0.375 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.08</mass>
+          <inertia>
+            <ixx>3.33e-5</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>3.33e-5</iyy>
+            <iyz>0</iyz>
+            <izz>3.33e-5</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <!-- Collision smaller than visual to allow gripper to close -->
+            <box><size>0.03 0.03 0.05</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1e6</kp>
+                <kd>100</kd>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.05 0.05 0.05</size></box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.1 0.1 1</ambient>
+            <diffuse>0.9 0.2 0.2 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+        </visual>
+      </link>
+      <!-- Allow gripper fingers to overlap with object for grasping -->
+      <disable_collision>
+        <link1>red_cube::link</link1>
+        <link2>gen3_lite::right_finger_prox_link</link2>
+      </disable_collision>
+      <disable_collision>
+        <link1>red_cube::link</link1>
+        <link2>gen3_lite::right_finger_dist_link</link2>
+      </disable_collision>
+      <disable_collision>
+        <link1>red_cube::link</link1>
+        <link2>gen3_lite::left_finger_prox_link</link2>
+      </disable_collision>
+      <disable_collision>
+        <link1>red_cube::link</link1>
+        <link2>gen3_lite::left_finger_dist_link</link2>
+      </disable_collision>
+    </model>
+
+    <!-- ============================================== -->
+    <!-- PICK STATION 2: BLUE CYLINDER - 45mm dia      -->
+    <!-- World position: (0.55, 0.20, 0.38)            -->
+    <!-- Robot frame: (0.55, 0.20, 0.015)              -->
+    <!-- Table z=0.35 + half_height(0.03) = 0.38       -->
+    <!-- ============================================== -->
+    <model name="blue_cylinder">
+      <pose>0.45 0.20 0.38 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.06</mass>
+          <inertia>
+            <ixx>2.5e-5</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>2.5e-5</iyy>
+            <iyz>0</iyz>
+            <izz>1.1e-5</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <cylinder>
+              <radius>0.015</radius>
+              <length>0.06</length>
+            </cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1e6</kp>
+                <kd>100</kd>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.0225</radius>
+              <length>0.06</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.1 0.1 0.8 1</ambient>
+            <diffuse>0.2 0.2 0.9 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+        </visual>
+      </link>
+      <!-- Allow gripper fingers to overlap with object for grasping -->
+      <disable_collision>
+        <link1>blue_cylinder::link</link1>
+        <link2>gen3_lite::right_finger_prox_link</link2>
+      </disable_collision>
+      <disable_collision>
+        <link1>blue_cylinder::link</link1>
+        <link2>gen3_lite::right_finger_dist_link</link2>
+      </disable_collision>
+      <disable_collision>
+        <link1>blue_cylinder::link</link1>
+        <link2>gen3_lite::left_finger_prox_link</link2>
+      </disable_collision>
+      <disable_collision>
+        <link1>blue_cylinder::link</link1>
+        <link2>gen3_lite::left_finger_dist_link</link2>
+      </disable_collision>
+    </model>
+
+    <!-- ============================================== -->
+    <!-- PICK STATION 3: GREEN SPHERE - 50mm dia       -->
+    <!-- World position: (0.40, 0.0, 0.375)            -->
+    <!-- Robot frame: (0.40, 0.0, 0.01)                -->
+    <!-- Table z=0.35 + radius(0.025) = 0.375          -->
+    <!-- ============================================== -->
+    <model name="green_sphere">
+      <pose>0.40 0.05 0.375 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.05</mass>
+          <inertia>
+            <ixx>1.25e-5</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1.25e-5</iyy>
+            <iyz>0</iyz>
+            <izz>1.25e-5</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <sphere><radius>0.0225</radius></sphere>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.2</mu>
+                <mu2>1.2</mu2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1e6</kp>
+                <kd>100</kd>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <sphere><radius>0.0225</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.1 0.6 0.1 1</ambient>
+            <diffuse>0.2 0.8 0.2 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+        </visual>
+      </link>
+      <!-- Allow gripper fingers to overlap with object for grasping -->
+      <disable_collision>
+        <link1>green_sphere::link</link1>
+        <link2>gen3_lite::right_finger_prox_link</link2>
+      </disable_collision>
+      <disable_collision>
+        <link1>green_sphere::link</link1>
+        <link2>gen3_lite::right_finger_dist_link</link2>
+      </disable_collision>
+      <disable_collision>
+        <link1>green_sphere::link</link1>
+        <link2>gen3_lite::left_finger_prox_link</link2>
+      </disable_collision>
+      <disable_collision>
+        <link1>green_sphere::link</link1>
+        <link2>gen3_lite::left_finger_dist_link</link2>
+      </disable_collision>
+    </model>
+
+    <!-- ============================================== -->
+    <!-- PICK STATION 4: YELLOW CUBE - 50mm            -->
+    <!-- World position: (0.60, -0.05, 0.375)          -->
+    <!-- Robot frame: (0.60, -0.05, 0.01)              -->
+    <!-- Table z=0.35 + half_cube(0.025) = 0.375       -->
+    <!-- ============================================== -->
+    <model name="yellow_cube">
+      <pose>0.15 0.05 0.375 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.08</mass>
+          <inertia>
+            <ixx>3.33e-5</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>3.33e-5</iyy>
+            <iyz>0</iyz>
+            <izz>3.33e-5</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <!-- Collision smaller than visual to allow gripper to close -->
+            <box><size>0.035 0.035 0.05</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1e6</kp>
+                <kd>100</kd>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.05 0.05 0.05</size></box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.1 1</ambient>
+            <diffuse>0.9 0.9 0.2 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>
