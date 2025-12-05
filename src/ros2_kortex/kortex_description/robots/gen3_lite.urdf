@@ -366,6 +366,7 @@
     <material>Kortex/Gray</material>
   </gazebo>
   <!-- TODO(MarqRazz) look into why the joint and limits needed to be flipped and modified -->
+  <!-- fixed 12/2/25 Zach Haidari-->
   <joint name="right_finger_bottom_joint" type="revolute">
     <origin rpy="1.571 0.611 1.571" xyz="0 -0.030501 0.070003"/>
     <parent link="gripper_base_link"/>
@@ -405,7 +406,7 @@
     <axis xyz="0 0 1"/>
     <limit effort="1000" lower="-1.03" upper="0.21" velocity="1000"/>
     <!--limit lower="-1.03" upper="0.21" effort="1000" velocity="1000" /-->
-    <mimic joint="right_finger_bottom_joint" multiplier="-0.276" offset="0.0"/>
+    <mimic joint="right_finger_bottom_joint" multiplier="-0.676" offset="0.149"/>
   </joint>
   <link name="left_finger_prox_link">
     <inertial>
@@ -472,6 +473,6 @@
     <axis xyz="0 0 -1"/>
     <limit effort="1000" lower="-1.03" upper="0.21" velocity="1000"/>
     <!--limit lower="-1.03" upper="0.21" effort="1000" velocity="1000" /-->
-    <mimic joint="right_finger_bottom_joint" multiplier="-0.276" offset="0.0"/>
+    <mimic joint="right_finger_bottom_joint" multiplier="-0.676" offset="0.149"/>
   </joint>
 </robot>

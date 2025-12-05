@@ -98,11 +98,11 @@ class PickAndPlaceDemo(Node):
         # Motion planning settings
         self.use_motion_planning = True  # Use MoveIt planning vs direct IK
         self.planner_id = "RRTstar"  # RRTstar optimizes for shortest path
-        self.planning_time = 4.0  # seconds allowed for planning
+        self.planning_time = 10.0  # seconds allowed for planning
         self.num_planning_attempts = 60  # number of attempts
         
         # Motion timing - fast movements
-        self.move_duration = 0.5  # seconds for each motion (faster)
+        self.move_duration = 1.0  # seconds for each motion (faster)
         
         # Define pick stations in base_link frame
         # Robot base_link is at world z=0.365
@@ -344,8 +344,8 @@ class PickAndPlaceDemo(Node):
         mp_request.planner_id = self.planner_id
         mp_request.num_planning_attempts = self.num_planning_attempts
         mp_request.allowed_planning_time = self.planning_time
-        mp_request.max_velocity_scaling_factor = 0.8  # 80% of max velocity
-        mp_request.max_acceleration_scaling_factor = 0.8  # 80% of max acceleration
+        mp_request.max_velocity_scaling_factor = 0.3  # 30% of max velocity
+        mp_request.max_acceleration_scaling_factor = 0.3  # 30% of max acceleration
         
         # Set start state to current state
         mp_request.start_state = RobotState()
@@ -639,9 +639,9 @@ class PickAndPlaceDemo(Node):
             # 1b. Move to home position (arm forward, gripper horizontal)
             # Gripper parallel to table, pointing forward
             self.get_logger().info('Step 1b: Moving to home position')
-            home_joints = [0.0, 1.0, 2.0, 1.75, 0.55, 0.0]
+            home_joints = [0.0, 1.0, 2.05, 1.615, 0.55, 0.0]
             #home_joints = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-
+            
             if not self.move_to_joint_positions(home_joints, duration=2.0):
                 self.get_logger().warn('Home move failed, continuing to pregrasp anyway...')
             time.sleep(0.5)

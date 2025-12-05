@@ -23,9 +23,9 @@ This repository contains a ROS2 Jazzy workspace for simulating and controlling t
 
 ### Key Modifications
 
-- **Home position**: Changed from `[0,0,0,0,0,0]` to `[0, -π/4, π/4, 0, 0, 0]` for gripper parallel to table
+- **Home position**: Changed from `[0,0,0,0,0,0]` to `[0.0, 1.0, 2.05, 1.615, 0.55, 0.0]` for optimal home positioning with gripper facing forward.
 - **Motion planning**: Uses joint-space constraints instead of pose-based goals to prevent spinning
-- **Planner**: RRTstar with 60 planning attempts for optimal path finding
+- **Planner**: RRTstar with 60 planning attempts and 10 seconds planning time for optimal path finding
 
 ## 📋 Prerequisites
 
@@ -36,7 +36,13 @@ This repository contains a ROS2 Jazzy workspace for simulating and controlling t
 
 ## 🚀 Quick Start - Simulation
 
-### Terminal 1: Launch Gazebo Simulation
+> **Note:** If running in WSL2, simulation will be slower due to limited GPU acceleration. For best performance, use native Ubuntu Linux.
+
+### Option A: Launch Gazebo + RViz/MoveIt Separately (Recommended)
+
+This method gives you more control and allows you to restart individual components.
+
+#### Terminal 1: Launch Gazebo Simulation
 ```bash
 cd ~/ros2_kortex_ws
 source install/setup.bash
@@ -50,18 +56,75 @@ ros2 launch kortex_bringup kortex_sim_control.launch.py \
     launch_rviz:=false \
     world:=pick_and_place.sdf
 ```
+Wait for Gazebo to fully load and the robot to spawn before proceeding.
 
-### Terminal 2: Launch MoveIt
+#### Terminal 2: Launch RViz + MoveIt
+```bash
+cd ~/ros2_kortex_ws
+source install/setup.bash
+ros2 launch kinova_gen3_lite_moveit_config sim.launch.py use_sim_time:=true
+```
+This launches RViz with the MoveIt motion planning plugin. You can:
+- Use the **MotionPlanning** panel to plan and execute motions interactively
+- Drag the interactive marker to set goal poses
+- Click "Plan & Execute" to move the robot
+
+#### Terminal 3: Run Pick and Place Demo (Optional)
+```bash
+cd ~/ros2_kortex_ws
+source install/setup.bash
+ros2 run kortex_bringup pick_and_place_demo.py
+```
+
+### Option B: Launch Everything Together
+
+For a simpler setup, you can launch Gazebo with RViz in one command:
+
+#### Terminal 1: Launch Gazebo + RViz
+```bash
+cd ~/ros2_kortex_ws
+source install/setup.bash
+ros2 launch kortex_bringup kortex_sim_control.launch.py \
+    dof:=6 \
+    name:=gen3_lite \
+    robot_type:=gen3_lite \
+    gripper:=gen3_lite_2f \
+    sim_gazebo:=true \
+    use_sim_time:=true \
+    launch_rviz:=true \
+    world:=pick_and_place.sdf
+```
+
+#### Terminal 2: Launch MoveIt (still needed for motion planning)
 ```bash
 cd ~/ros2_kortex_ws
 source install/setup.bash
 ros2 launch kinova_gen3_lite_moveit_config sim.launch.py use_sim_time:=true
 ```
 
-### Terminal 3: Run Pick and Place Demo
+#### Terminal 3: Run Demo
 ```bash
 cd ~/ros2_kortex_ws
 source install/setup.bash
+ros2 run kortex_bringup pick_and_place_demo.py
+```
+
+### Headless Mode (No GUI - Faster)
+
+For testing without visualization:
+
+```bash
+# Terminal 1: Gazebo headless
+ros2 launch kortex_bringup kortex_sim_control.launch.py \
+    dof:=6 name:=gen3_lite robot_type:=gen3_lite gripper:=gen3_lite_2f \
+    sim_gazebo:=true use_sim_time:=true launch_rviz:=false \
+    world:=pick_and_place.sdf
+
+# Terminal 2: MoveIt (no RViz)
+ros2 launch kinova_gen3_lite_moveit_config sim.launch.py \
+    use_sim_time:=true launch_rviz:=false
+
+# Terminal 3: Run demo
 ros2 run kortex_bringup pick_and_place_demo.py
 ```
 
@@ -117,7 +180,7 @@ The FK was validated against Gazebo simulation:
 | Joint Configuration | End-Effector Position | Gripper Orientation |
 |---------------------|----------------------|---------------------|
 | `[0, 0, 0, 0, 0, 0]` | (0.057, -0.010, 1.003) m | Pointing UP |
-| `[0, -π/4, π/4, 0, 0, 0]` | (0.678, -0.010, 0.384) m | Horizontal (parallel to table) |
+| `[0.0, 1.0, 2.05, 1.615, 0.55, 0.0]` | Home position | Horizontal (parallel to table) |
 
 ## 🎮 Demo Sequence
 
@@ -159,12 +222,6 @@ The pick-and-place demo performs the following for each object:
 - [Kinova Gen3 Lite User Guide](https://www.kinovarobotics.com/)
 - [ros2_kortex Repository](https://github.com/Kinovarobotics/ros2_kortex)
 - [MoveIt2 Documentation](https://moveit.picknik.ai/)
-
-## 👥 Authors
-
-- Zach Haidari
-- Ryan Cullen  
-- Long Yin
 
 ## 📄 License
 
