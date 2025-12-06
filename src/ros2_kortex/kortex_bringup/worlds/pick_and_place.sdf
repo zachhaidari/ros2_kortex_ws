@@ -115,7 +115,7 @@
     <!-- ============================================== -->
     <model name="workspace_table">
       <static>true</static>
-      <pose>0.45 0 0 0 0 0</pose>
+      <pose>-0.30 -0.30 0 0 0 0</pose>
       <link name="table_link">
         <!-- Table top - LARGER: 1.0m x 0.8m -->
         <collision name="table_top_collision">
@@ -217,12 +217,12 @@
 
     <!-- ============================================== -->
     <!-- BASKET - Larger: 30cm x 20cm x 10cm high      -->
-    <!-- World position: (0.35, -0.20, 0.365)          -->
-    <!-- Robot frame: (0.35, -0.20, 0.0)               -->
+    <!-- World position: (-0.30, -0.05, 0.365)           -->
+    <!-- Robot frame: (-0.30, -0.05, 0.0)                -->
     <!-- ============================================== -->
     <model name="basket">
       <static>true</static>
-      <pose>0.35 -0.20 0.365 0 0 0</pose>
+      <pose>-0.30 -0.05 0.365 0 0 0</pose>
       <link name="basket_link">
         <!-- Bottom -->
         <collision name="bottom_collision">
@@ -314,12 +314,12 @@
 
     <!-- ============================================== -->
     <!-- PICK STATION 1: RED CUBE - 50mm               -->
-    <!-- World position: (0.35, 0.25, 0.375)           -->
-    <!-- Robot frame: (0.35, 0.25, 0.075)              -->
+    <!-- World position: (-0.25, -0.45, 0.375)          -->
+    <!-- Robot frame: (-0.25, -0.35, 0.01)              -->
     <!-- Table z=0.35 + half_cube(0.025) = 0.375       -->
     <!-- ============================================== -->
     <model name="red_cube">
-      <pose>0.25 0.25 0.375 0 0 0</pose>
+      <pose>-0.25 -0.35 0.375 0 0 0</pose>
       <link name="link">
         <inertial>
           <mass>0.08</mass>
@@ -384,12 +384,12 @@
 
     <!-- ============================================== -->
     <!-- PICK STATION 2: BLUE CYLINDER - 45mm dia      -->
-    <!-- World position: (0.55, 0.20, 0.38)            -->
-    <!-- Robot frame: (0.55, 0.20, 0.015)              -->
-    <!-- Table z=0.35 + half_height(0.03) = 0.38       -->
+    <!-- World position: (-0.45, -0.40, 0.38)           -->
+    <!-- Robot frame: (-0.45, -0.30, 0.015)            -->
+    <!-- Table z=0.35 + half_height(0.03) = 0.38      -->
     <!-- ============================================== -->
     <model name="blue_cylinder">
-      <pose>0.45 0.20 0.38 0 0 0</pose>
+      <pose>-0.45 -0.30 0.38 0 0 0</pose>
       <link name="link">
         <inertial>
           <mass>0.06</mass>
@@ -459,12 +459,12 @@
 
     <!-- ============================================== -->
     <!-- PICK STATION 3: GREEN SPHERE - 50mm dia       -->
-    <!-- World position: (0.40, 0.0, 0.375)            -->
-    <!-- Robot frame: (0.40, 0.0, 0.01)                -->
+    <!-- World position: (-0.40, -0.25, 0.375)          -->
+    <!-- Robot frame: (-0.40, -0.25, 0.01)              -->
     <!-- Table z=0.35 + radius(0.025) = 0.375          -->
     <!-- ============================================== -->
     <model name="green_sphere">
-      <pose>0.40 0.05 0.375 0 0 0</pose>
+      <pose>-0.40 -0.25 0.375 0 0 0</pose>
       <link name="link">
         <inertial>
           <mass>0.05</mass>
@@ -528,12 +528,12 @@
 
     <!-- ============================================== -->
     <!-- PICK STATION 4: YELLOW CUBE - 50mm            -->
-    <!-- World position: (0.60, -0.05, 0.375)          -->
-    <!-- Robot frame: (0.60, -0.05, 0.01)              -->
+    <!-- World position: (-0.15, -0.25, 0.375)          -->
+    <!-- Robot frame: (-0.15, -0.25, 0.01)              -->
     <!-- Table z=0.35 + half_cube(0.025) = 0.375       -->
     <!-- ============================================== -->
     <model name="yellow_cube">
-      <pose>0.15 0.05 0.375 0 0 0</pose>
+      <pose>-0.15 -0.25 0.375 0 0 0</pose>
       <link name="link">
         <inertial>
           <mass>0.08</mass>

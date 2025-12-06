@@ -102,9 +102,10 @@ class PickAndPlaceDemo(Node):
         self.num_planning_attempts = 60  # number of attempts
         
         # Motion timing - fast movements
-        self.move_duration = 1.0  # seconds for each motion (faster)
+        self.move_duration = 1.50  # seconds for each motion (faster)
         
         # Define pick stations in base_link frame
+        # Robot at yaw=0, objects at negative X and Y (further away)
         # Robot base_link is at world z=0.365
         # Objects center at world z=0.375 → base_link z = 0.01
         # Objects top surface at base_link z ≈ 0.035
@@ -113,37 +114,37 @@ class PickAndPlaceDemo(Node):
         # For reliable grasping: position end_effector_link above object top
         # Pregrasp: z = 0.15 (clear approach above object)
         # Grasp: z = 0.06 (fingertips can reach object top at ~0.035)
-        # Basket center is at (0.35, -0.20), 30cm x 20cm, objects placed near center
+        # Basket center is at (-0.30, -0.05), 30cm x 20cm, objects placed near center
         self.pick_stations = {
             'red_cube': {
-                'pregrasp': self._create_pose(0.25, 0.25, 0.21),
-                'grasp': self._create_pose(0.25, 0.25, 0.18),
-                'basket_approach': self._create_pose(0.32, -0.17, 0.30),  # Near center, back-left
-                'basket_drop': self._create_pose(0.32, -0.17, 0.18),
+                'pregrasp': self._create_pose(-0.25, -0.35, 0.21),
+                'grasp': self._create_pose(-0.25, -0.35, 0.18),
+                'basket_approach': self._create_pose(-0.27, -0.08, 0.30),
+                'basket_drop': self._create_pose(-0.27, -0.08, 0.18),
             },
             'blue_cylinder': {
-                'pregrasp': self._create_pose(0.45, 0.20, 0.21),  # Matches world position
-                'grasp': self._create_pose(0.45, 0.20, 0.18),
-                'basket_approach': self._create_pose(0.38, -0.17, 0.30),  # Near center, back-right
-                'basket_drop': self._create_pose(0.38, -0.17, 0.16),
+                'pregrasp': self._create_pose(-0.45, -0.30, 0.21),
+                'grasp': self._create_pose(-0.45, -0.30, 0.18),
+                'basket_approach': self._create_pose(-0.33, -0.08, 0.30),
+                'basket_drop': self._create_pose(-0.33, -0.08, 0.16),
             },
             'green_sphere': {
-                'pregrasp': self._create_pose(0.40, 0.05, 0.21),
-                'grasp': self._create_pose(0.40, 0.05, 0.18),
-                'basket_approach': self._create_pose(0.32, -0.23, 0.30),  # Near center, front-left
-                'basket_drop': self._create_pose(0.32, -0.23, 0.15),      # Lower for sphere
+                'pregrasp': self._create_pose(-0.40, -0.25, 0.21),
+                'grasp': self._create_pose(-0.40, -0.25, 0.18),
+                'basket_approach': self._create_pose(-0.27, -0.02, 0.30),
+                'basket_drop': self._create_pose(-0.27, -0.02, 0.15),
             },
             'yellow_cube': {
-                'pregrasp': self._create_pose(0.15, 0.05, 0.21),  # Matches world position
-                'grasp': self._create_pose(0.15, 0.05, 0.18),
-                'basket_approach': self._create_pose(0.38, -0.23, 0.30),  # Near center, front-right
-                'basket_drop': self._create_pose(0.38, -0.23, 0.18),
+                'pregrasp': self._create_pose(-0.15, -0.25, 0.21),
+                'grasp': self._create_pose(-0.15, -0.25, 0.18),
+                'basket_approach': self._create_pose(-0.33, -0.02, 0.30),
+                'basket_drop': self._create_pose(-0.33, -0.02, 0.18),
             },
         }
         
         # Default basket positions (fallback)
-        self.basket_approach = self._create_pose(0.35, -0.20, 0.30)  # High approach
-        self.basket_position = self._create_pose(0.35, -0.20, 0.20)  # Drop position
+        self.basket_approach = self._create_pose(-0.30, -0.05, 0.30)  # High approach
+        self.basket_position = self._create_pose(-0.30, -0.05, 0.20)  # Drop position
         
         self.get_logger().info('Pick and Place Demo initialized')
         self.get_logger().info('Waiting for services and action servers...')
@@ -192,10 +193,10 @@ class PickAndPlaceDemo(Node):
         # Objects in WORLD frame (from SDF spawn positions)
         # Robot base_link is at world z=0.365, so convert: base_link_z = world_z - 0.365
         objects_world = [
-            ('red_cube', 0.25, 0.25, 0.375, 0.05, 0.05, 0.05),
-            ('blue_cylinder', 0.45, 0.20, 0.38, 0.045, 0.045, 0.06),  # Moved closer
-            ('green_sphere', 0.40, 0.05, 0.375, 0.05, 0.05, 0.05),
-            ('yellow_cube', 0.15, 0.05, 0.375, 0.05, 0.05, 0.05),   # Moved closer
+            ('red_cube', -0.25, -0.25, 0.375, 0.05, 0.05, 0.05),
+            ('blue_cylinder', -0.45, -0.20, 0.38, 0.045, 0.045, 0.06),  # Moved closer
+            ('green_sphere', -0.40, -0.05, 0.375, 0.05, 0.05, 0.05),
+            ('yellow_cube', -0.15, -0.05, 0.375, 0.05, 0.05, 0.05),   # Moved closer
         ]
         
         # Convert z-coordinates from world to base_link frame
@@ -637,9 +638,9 @@ class PickAndPlaceDemo(Node):
             time.sleep(0.3)
             
             # 1b. Move to home position (arm forward, gripper horizontal)
-            # Gripper parallel to table, pointing forward
+            # Validated FK position: horizontal and parallel to table
             self.get_logger().info('Step 1b: Moving to home position')
-            home_joints = [0.0, 1.0, 2.05, 1.615, 0.55, 0.0]
+            home_joints = [0.0, -1.0, -2.05, -1.615, 0.55, 0.0]
             #home_joints = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
             
             if not self.move_to_joint_positions(home_joints, duration=2.0):
@@ -650,13 +651,13 @@ class PickAndPlaceDemo(Node):
             self.get_logger().info('Step 2: Moving to pre-grasp position')
             if not self.move_to_pose(station['pregrasp']):
                 return False
-            time.sleep(0.3)
+            time.sleep(0.5)
             
             # 3. Move down to grasp position
             self.get_logger().info('Step 3: Moving to grasp position')
             if not self.move_to_pose(station['grasp']):
                 return False
-            time.sleep(0.3)
+            time.sleep(0.5)
             
             # 4. Close gripper (with higher effort for firm grip)
             self.get_logger().info('Step 4: Closing gripper')
@@ -737,7 +738,7 @@ class PickAndPlaceDemo(Node):
         
         # Final return to home
         self.get_logger().info('Returning arm to home position...')
-        home_joints = [0.0, -1.15, 0.40, 0.0, 0.0, 0.0]
+        home_joints = [0.0, -1.0, -2.05, -1.615, 0.55, 0.0]
         self.move_to_joint_positions(home_joints, duration=2.0)
         self.get_logger().info('Demo finished!')
 

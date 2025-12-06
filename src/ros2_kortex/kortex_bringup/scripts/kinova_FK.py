@@ -3,7 +3,6 @@
 Numeric forward kinematics for Kinova Gen3 Lite (6-DOF) using classical DH parameters.
 
 This is a pure-numeric (math/numpy) version suitable for real-time use in ROS2 nodes.
-It matches the SymPy-based DH model you just tested.
 
 Joint order assumed: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6]
 Angles in radians.
@@ -102,3 +101,37 @@ if __name__ == "__main__":
     np.set_printoptions(precision=6, suppress=True)
     print(T)
     print("Position [x, y, z]:", T[0:3, 3])
+    print()
+    
+    # Ideal home position - validated to be horizontal and parallel to table
+    print("="*60)
+    print("IDEAL HOME POSITION: [0.0, -1.0, -2.05, -1.615, 0.55, 0.0]")
+    print("="*60)
+    print()
+    
+    q_home = [0.0, 1.0, 2.05, 1.615, 0.55, 0.0]
+    T_home = fk_gen3_lite_numpy(q_home)
+    
+    print("Homogeneous Transformation Matrix T:")
+    print(T_home)
+    print()
+    
+    print("Position [x, y, z]:", T_home[0:3, 3])
+    print()
+    
+    print("Rotation Matrix R:")
+    print(T_home[0:3, 0:3])
+    print()
+    
+    # Extract roll, pitch, yaw
+    r11, r12, r13 = T_home[0, 0:3]
+    r21, r22, r23 = T_home[1, 0:3]
+    r31, r32, r33 = T_home[2, 0:3]
+    
+    pitch = math.atan2(-r31, math.sqrt(r11**2 + r21**2))
+    yaw = math.atan2(r21, r11)
+    roll = math.atan2(r32, r33)
+    
+    print(f"Roll-Pitch-Yaw (rad): [{roll:.6f}, {pitch:.6f}, {yaw:.6f}]")
+    print(f"Roll-Pitch-Yaw (deg): [{math.degrees(roll):.2f}, {math.degrees(pitch):.2f}, {math.degrees(yaw):.2f}]")
+
