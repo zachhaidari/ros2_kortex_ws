@@ -117,14 +117,14 @@ class PickAndPlaceDemo(Node):
         # Basket center is at (-0.30, -0.05), 30cm x 20cm, objects placed near center
         self.pick_stations = {
             'red_cube': {
-                'pregrasp': self._create_pose(-0.25, -0.35, 0.21),
-                'grasp': self._create_pose(-0.25, -0.35, 0.18),
+                'pregrasp': self._create_pose(-0.25, -0.28, 0.21),
+                'grasp': self._create_pose(-0.25, -0.28, 0.18),
                 'basket_approach': self._create_pose(-0.27, -0.08, 0.30),
                 'basket_drop': self._create_pose(-0.27, -0.08, 0.18),
             },
             'blue_cylinder': {
-                'pregrasp': self._create_pose(-0.45, -0.30, 0.21),
-                'grasp': self._create_pose(-0.45, -0.30, 0.18),
+                'pregrasp': self._create_pose(-0.10, -0.32, 0.21),
+                'grasp': self._create_pose(-0.10, -0.32, 0.18),
                 'basket_approach': self._create_pose(-0.33, -0.08, 0.30),
                 'basket_drop': self._create_pose(-0.33, -0.08, 0.16),
             },
@@ -744,13 +744,20 @@ class PickAndPlaceDemo(Node):
 
 
 def main(args=None):
+    import sys
     rclpy.init(args=args)
     
     demo = PickAndPlaceDemo()
     
     try:
-        # Run demo for all objects
-        demo.run_demo()  # No argument = all stations
+        # Check for command-line arguments for specific stations
+        if len(sys.argv) > 1:
+            stations = sys.argv[1:]
+            demo.get_logger().info(f'Running demo for specified stations: {stations}')
+            demo.run_demo(stations=stations)
+        else:
+            # Run demo for all objects
+            demo.run_demo()  # No argument = all stations
         
     except KeyboardInterrupt:
         demo.get_logger().info('Demo interrupted by user')

@@ -21,11 +21,21 @@ This repository contains a ROS2 Jazzy workspace for simulating and controlling t
 
 3. **`clear_faults.py`** - Utility script to clear robot faults when connecting to real hardware
 
+4. **`kinova_FK.py`** - Forward kinematics validation script using DH parameters to:
+   - Validate end-effector positions for different joint configurations
+   - Confirm the home position produces the desired gripper orientation
+   - Uses classical Denavit-Hartenberg parameters for accurate FK calculations
+
+5. **`test_fk_complete.py`** - Complete symbolic FK test script using exact symbolic equations
+   - Tests multiple joint configurations including home position
+   - Displays full transformation matrices and gripper orientations
+
 ### Key Modifications
 
-- **Home position**: Changed from `[0,0,0,0,0,0]` to `[0.0, 1.0, 2.05, 1.615, 0.55, 0.0]` for optimal home positioning with gripper facing forward.
+- **Home position**: Changed from `[0,0,0,0,0,0]` to `[0.0, -1.0, -2.05, -1.615, 0.55, 0.0]` for optimal home positioning with gripper horizontal and parallel to table. This position was validated using `kinova_FK.py` to ensure correct end-effector pose at approximately (-0.213m, -0.062m, 0.508m) with gripper pointing horizontally.
 - **Motion planning**: Uses joint-space constraints instead of pose-based goals to prevent spinning
 - **Planner**: RRTstar with 60 planning attempts and 10 seconds planning time for optimal path finding
+- **Object positions**: All objects positioned within robot's reachable workspace (Y ≤ -0.25m) based on IK validation
 
 ## 📋 Prerequisites
 

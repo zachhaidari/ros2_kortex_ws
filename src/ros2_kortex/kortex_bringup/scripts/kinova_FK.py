@@ -134,4 +134,4 @@ if __name__ == "__main__":
     
     print(f"Roll-Pitch-Yaw (rad): [{roll:.6f}, {pitch:.6f}, {yaw:.6f}]")
     print(f"Roll-Pitch-Yaw (deg): [{math.degrees(roll):.2f}, {math.degrees(pitch):.2f}, {math.degrees(yaw):.2f}]")
-
+    
