@@ -31,10 +31,8 @@ class TestHomePosition(Node):
         self.get_logger().info('Target: [0.0, -0.7853, 0.7854, 0, 0, 0] rad')
         self.get_logger().info('(Reflected around Z-axis for 180° rotated robot)')
         
-        # Validated home position reflected for 180° robot rotation
-        # Original: [0.0, 1.0, 2.05, 1.615, 0.55, 0.0]
-        # Reflected: joint_2 and joint_3 values adjusted for 180° rotated robot
-        home_joints = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        # Validated home position 
+        home_joints = [0.0, -1.0, -2.05, -1.615, 0.55, 0.0]
         
         msg = JointTrajectory()
         msg.joint_names = [
