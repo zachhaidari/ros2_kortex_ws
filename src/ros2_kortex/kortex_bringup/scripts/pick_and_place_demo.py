@@ -84,6 +84,9 @@ class PickAndPlaceDemo(Node):
             JointState, '/joint_states', self.joint_state_callback, 10
         )
         
+        # MATLAB publisher for streaming joint angles
+        self.matlab_pub = self.create_publisher(JointTrajectory, '/matlab_joint_angles', 10)
+        
         # Configuration
         self.planning_group = "arm"
         self.ee_link = "end_effector_link"
@@ -91,18 +94,18 @@ class PickAndPlaceDemo(Node):
         
         # Gripper positions (gen3_lite_2f: 0.0=open, max=0.96)
         # When gripping an object, gripper will stall before reaching target
-        # Use 0.5 - just enough to grip 35mm collision objects
+        # Increased to 0.9 to properly close around 50mm diameter objects
         self.GRIPPER_OPEN = 0.1
         self.GRIPPER_CLOSED = 0.8
         
         # Motion planning settings
         self.use_motion_planning = True  # Use MoveIt planning vs direct IK
-        self.planner_id = "RRTstar"  # RRTstar optimizes for shortest path
+        self.planner_id = "RRTConnect"  # Fast bidirectional planner
         self.planning_time = 10.0  # seconds allowed for planning
-        self.num_planning_attempts = 60  # number of attempts
+        self.num_planning_attempts = 25  # number of attempts
         
-        # Motion timing - fast movements
-        self.move_duration = 1.50  # seconds for each motion (faster)
+        # Motion timing - stable for simulation
+        self.move_duration = 1.0  # seconds for each motion
         
         # Define pick stations in base_link frame
         # Robot at yaw=0, objects at negative X and Y (further away)
@@ -117,28 +120,28 @@ class PickAndPlaceDemo(Node):
         # Basket center is at (-0.30, -0.05), 30cm x 20cm, objects placed near center
         self.pick_stations = {
             'red_cube': {
-                'pregrasp': self._create_pose(-0.25, -0.28, 0.21),
-                'grasp': self._create_pose(-0.25, -0.28, 0.18),
-                'basket_approach': self._create_pose(-0.27, -0.08, 0.30),
-                'basket_drop': self._create_pose(-0.27, -0.08, 0.18),
+                'pregrasp': self._create_pose(-0.35, -0.38, 0.21),
+                'grasp': self._create_pose(-0.35, -0.38, 0.18),
+                'basket_approach': self._create_pose(-0.30, -0.03, 0.40),
+                'basket_drop': self._create_pose(-0.30, -0.03, 0.18),
             },
             'blue_cylinder': {
-                'pregrasp': self._create_pose(-0.10, -0.32, 0.21),
-                'grasp': self._create_pose(-0.10, -0.32, 0.18),
-                'basket_approach': self._create_pose(-0.33, -0.08, 0.30),
-                'basket_drop': self._create_pose(-0.33, -0.08, 0.16),
+                'pregrasp': self._create_pose(-0.10, -0.38, 0.23),
+                'grasp': self._create_pose(-0.10, -0.38, 0.20),
+                'basket_approach': self._create_pose(-0.30, -0.05, 0.40),
+                'basket_drop': self._create_pose(-0.30, -0.05, 0.17),
             },
             'green_sphere': {
-                'pregrasp': self._create_pose(-0.40, -0.25, 0.21),
-                'grasp': self._create_pose(-0.40, -0.25, 0.18),
-                'basket_approach': self._create_pose(-0.27, -0.02, 0.30),
-                'basket_drop': self._create_pose(-0.27, -0.02, 0.15),
+                'pregrasp': self._create_pose(-0.28, -0.30, 0.21),
+                'grasp': self._create_pose(-0.28, -0.30, 0.18),
+                'basket_approach': self._create_pose(-0.30, -0.07, 0.40),
+                'basket_drop': self._create_pose(-0.30, -0.07, 0.15),
             },
             'yellow_cube': {
-                'pregrasp': self._create_pose(-0.15, -0.25, 0.21),
-                'grasp': self._create_pose(-0.15, -0.25, 0.18),
-                'basket_approach': self._create_pose(-0.33, -0.02, 0.30),
-                'basket_drop': self._create_pose(-0.33, -0.02, 0.18),
+                'pregrasp': self._create_pose(0.0, -0.25, 0.21),
+                'grasp': self._create_pose(0.0, -0.25, 0.18),
+                'basket_approach': self._create_pose(-0.30, -0.09, 0.40),
+                'basket_drop': self._create_pose(-0.30, -0.09, 0.18),
             },
         }
         
@@ -182,6 +185,19 @@ class PickAndPlaceDemo(Node):
         # Publish objects to RViz
         self.publish_objects_to_rviz()
 
+    def publish_joint_angles_to_matlab(self, joint_angles):
+        """Publish joint angles to MATLAB via ROS2 topic."""
+        msg = JointTrajectory()
+        msg.joint_names = self.ARM_JOINTS
+        
+        point = JointTrajectoryPoint()
+        point.positions = joint_angles
+        point.time_from_start = Duration(sec=0, nanosec=0)
+        
+        msg.points.append(point)
+        
+        self.matlab_pub.publish(msg)
+
     def publish_objects_to_rviz(self):
         """Publish collision objects to RViz2 for visualization."""
         # Create publisher for collision objects
@@ -192,11 +208,12 @@ class PickAndPlaceDemo(Node):
         
         # Objects in WORLD frame (from SDF spawn positions)
         # Robot base_link is at world z=0.365, so convert: base_link_z = world_z - 0.365
+        # For cylinders: sx=radius (not diameter), sy=radius, sz=height
         objects_world = [
-            ('red_cube', -0.25, -0.25, 0.375, 0.05, 0.05, 0.05),
-            ('blue_cylinder', -0.45, -0.20, 0.38, 0.045, 0.045, 0.06),  # Moved closer
-            ('green_sphere', -0.40, -0.05, 0.375, 0.05, 0.05, 0.05),
-            ('yellow_cube', -0.15, -0.05, 0.375, 0.05, 0.05, 0.05),   # Moved closer
+            ('red_cube', -0.35, -0.37, 0.375, 0.05, 0.05, 0.05),
+            ('blue_cylinder', -0.10, -0.38, 0.38, 0.025, 0.025, 0.06),
+            ('green_sphere', -0.28, -0.30, 0.375, 0.05, 0.05, 0.05),
+            ('yellow_cube', 0.0, -0.25, 0.375, 0.05, 0.05, 0.05),
         ]
         
         # Convert z-coordinates from world to base_link frame
@@ -217,7 +234,7 @@ class PickAndPlaceDemo(Node):
                 primitive.dimensions = [sx, sy, sz]
             elif 'cylinder' in name:
                 primitive.type = SolidPrimitive.CYLINDER
-                primitive.dimensions = [sz, sx/2]  # height, radius
+                primitive.dimensions = [sz, sx]  # height, radius (sx is already radius)
             elif 'sphere' in name:
                 primitive.type = SolidPrimitive.SPHERE
                 primitive.dimensions = [sx/2]  # radius
@@ -253,8 +270,13 @@ class PickAndPlaceDemo(Node):
         return pose
 
     def joint_state_callback(self, msg):
-        """Store current joint state."""
+        """Store current joint state and publish to MATLAB."""
         self.current_joint_state = msg
+        
+        # Extract and publish arm joint positions to MATLAB
+        arm_positions = self.get_arm_joint_positions()
+        if arm_positions is not None:
+            self.publish_joint_angles_to_matlab(arm_positions)
 
     def get_arm_joint_positions(self):
         """Extract arm joint positions from current joint state."""
@@ -345,8 +367,8 @@ class PickAndPlaceDemo(Node):
         mp_request.planner_id = self.planner_id
         mp_request.num_planning_attempts = self.num_planning_attempts
         mp_request.allowed_planning_time = self.planning_time
-        mp_request.max_velocity_scaling_factor = 0.3  # 30% of max velocity
-        mp_request.max_acceleration_scaling_factor = 0.3  # 30% of max acceleration
+        mp_request.max_velocity_scaling_factor = 0.8  # 80% of max velocity for faster demo
+        mp_request.max_acceleration_scaling_factor = 0.8  # 80% of max acceleration
         
         # Set start state to current state
         mp_request.start_state = RobotState()
@@ -362,8 +384,8 @@ class PickAndPlaceDemo(Node):
             joint_constraint = JointConstraint()
             joint_constraint.joint_name = joint_name
             joint_constraint.position = target_joints[i]
-            joint_constraint.tolerance_above = 0.01  # ~0.5 degrees
-            joint_constraint.tolerance_below = 0.01
+            joint_constraint.tolerance_above = 0.03  # ~1.1 degrees - relaxed for fewer waypoints
+            joint_constraint.tolerance_below = 0.03
             joint_constraint.weight = 1.0
             goal_constraints.joint_constraints.append(joint_constraint)
         
@@ -419,11 +441,11 @@ class PickAndPlaceDemo(Node):
         
         # Wait for result
         result_future = goal_handle.get_result_async()
-        max_wall_time = 120.0
+        max_wall_time = 60.0  # 1 minute should be plenty with faster physics
         start_time = time.time()
         
         while not result_future.done() and (time.time() - start_time) < max_wall_time:
-            rclpy.spin_once(self, timeout_sec=0.5)
+            rclpy.spin_once(self, timeout_sec=0.05)
         
         if not result_future.done():
             self.get_logger().error('Timeout waiting for trajectory result!')
@@ -480,14 +502,13 @@ class PickAndPlaceDemo(Node):
         
         self.get_logger().info('Trajectory goal accepted, waiting for execution...')
         
-        # Wait for result - poll with longer wall clock timeout
-        # since simulation may run slower than real time
+        # Wait for result - poll frequently for responsive execution
         result_future = goal_handle.get_result_async()
-        max_wall_time = 120.0  # 2 minutes wall time max
+        max_wall_time = 60.0  # 2 minutes for slow simulation
         start_time = time.time()
         
         while not result_future.done() and (time.time() - start_time) < max_wall_time:
-            rclpy.spin_once(self, timeout_sec=0.5)
+            rclpy.spin_once(self, timeout_sec=0.05)
         
         if not result_future.done():
             self.get_logger().error(f'Timeout waiting for trajectory result after {max_wall_time}s wall time!')
@@ -635,7 +656,7 @@ class PickAndPlaceDemo(Node):
             self.get_logger().info('Step 1: Opening gripper')
             if not self.move_gripper(self.GRIPPER_OPEN):
                 return False
-            time.sleep(0.3)
+            time.sleep(0.05)
             
             # 1b. Move to home position (arm forward, gripper horizontal)
             # Validated FK position: horizontal and parallel to table
@@ -645,62 +666,57 @@ class PickAndPlaceDemo(Node):
             
             if not self.move_to_joint_positions(home_joints, duration=2.0):
                 self.get_logger().warn('Home move failed, continuing to pregrasp anyway...')
-            time.sleep(0.5)
-            
+            time.sleep(2.0) #Wait for physics to settle
+
             # 2. Move to pre-grasp position
             self.get_logger().info('Step 2: Moving to pre-grasp position')
             if not self.move_to_pose(station['pregrasp']):
                 return False
-            time.sleep(0.5)
             
             # 3. Move down to grasp position
             self.get_logger().info('Step 3: Moving to grasp position')
             if not self.move_to_pose(station['grasp']):
                 return False
-            time.sleep(0.5)
             
             # 4. Close gripper (with higher effort for firm grip)
             self.get_logger().info('Step 4: Closing gripper')
             if not self.move_gripper(self.GRIPPER_CLOSED, max_effort=100.0):
                 return False
-            time.sleep(1.0)  # Wait for physics to settle
+            time.sleep(0.3)  # Wait for physics to settle
             
             # 5. Lift object high
             self.get_logger().info('Step 5: Lifting object')
             lift_pose = self._create_pose(
                 station['pregrasp'].position.x,
                 station['pregrasp'].position.y,
-                0.30  # Lift to clear obstacles (0.50 is outside workspace)
+                0.40  # Lift to clear obstacles (0.50 is outside workspace)
             )
+            time.sleep(0.3) # Wait for physics to settle
+
             if not self.move_to_pose(lift_pose):
                 return False
-            time.sleep(0.2)
             
             # 6. Move above basket (high approach) - use per-object position if available
             self.get_logger().info('Step 6: Moving above basket')
             basket_approach = station.get('basket_approach', self.basket_approach)
             if not self.move_to_pose(basket_approach):
                 return False
-            time.sleep(0.2)
             
             # 7. Lower to basket drop position - use per-object position if available
             self.get_logger().info('Step 7: Lowering to basket')
             basket_drop = station.get('basket_drop', self.basket_position)
             if not self.move_to_pose(basket_drop):
                 return False
-            time.sleep(0.2)
             
             # 8. Release object
             self.get_logger().info('Step 8: Releasing object')
             if not self.move_gripper(self.GRIPPER_OPEN):
                 return False
-            time.sleep(0.2)
             
             # 9. Move back up above basket
             self.get_logger().info('Step 9: Moving above basket')
             if not self.move_to_pose(basket_approach):
                 return False
-            time.sleep(0.2)
             
             self.get_logger().info(f'=== Pick and place for {station_name} completed! ===')
             return True

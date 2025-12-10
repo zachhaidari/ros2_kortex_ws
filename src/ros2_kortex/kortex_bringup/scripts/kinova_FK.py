@@ -109,7 +109,7 @@ if __name__ == "__main__":
     print("="*60)
     print()
     
-    q_home = [0.0, 1.0, 2.05, 1.615, 0.55, 0.0]
+    q_home = [0.0, -1.0, -2.05, -1.615, 0.55, 0.0]
     T_home = fk_gen3_lite_numpy(q_home)
     
     print("Homogeneous Transformation Matrix T:")

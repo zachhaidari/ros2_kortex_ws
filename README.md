@@ -33,9 +33,10 @@ This repository contains a ROS2 Jazzy workspace for simulating and controlling t
 ### Key Modifications
 
 - **Home position**: Changed from `[0,0,0,0,0,0]` to `[0.0, -1.0, -2.05, -1.615, 0.55, 0.0]` for optimal home positioning with gripper horizontal and parallel to table. This position was validated using `kinova_FK.py` to ensure correct end-effector pose at approximately (-0.213m, -0.062m, 0.508m) with gripper pointing horizontally.
+- **Gripper URDF fix**: Corrected mimic joint parameters for `left_finger_bottom_joint` and `left_finger_dist_joint` in `gen3_lite.urdf` (multiplier: -0.276 → -0.676, offset: 0.0 → 0.149) to ensure proper gripper closing
 - **Motion planning**: Uses joint-space constraints instead of pose-based goals to prevent spinning
-- **Planner**: RRTstar with 60 planning attempts and 10 seconds planning time for optimal path finding
-- **Object positions**: All objects positioned within robot's reachable workspace (Y ≤ -0.25m) based on IK validation
+- **Planner**: RRTConnect with 15 planning attempts and 10 seconds planning time for faster convergence
+- **Object positions**: All objects positioned within robot's reachable workspace at Y ∈ [-0.28, -0.32] and X ∈ [-0.10, -0.40] based on empirical IK validation
 
 ## 📋 Prerequisites
 
@@ -171,9 +172,12 @@ ros2 launch kinova_gen3_lite_moveit_config robot.launch.py \
 
 | File | Location | Description |
 |------|----------|-------------|
-| `pick_and_place_demo.py` | `src/ros2_kortex/kortex_bringup/scripts/` | Main demo script |
-| `pick_and_place.sdf` | `src/ros2_kortex/kortex_bringup/worlds/` | Gazebo world file |
-| `clear_faults.py` | `src/ros2_kortex/kortex_moveit_config/kinova_gen3_lite_moveit_config/launch/` | Fault clearing utility |
+| `pick_and_place_demo.py` | `src/ros2_kortex/kortex_bringup/scripts/` | Main demo script with RRTConnect planner |
+| `pick_and_place.sdf` | `src/ros2_kortex/kortex_bringup/worlds/` | Gazebo world file with optimized object positions |
+| `kinova_FK.py` | `src/ros2_kortex/kortex_bringup/scripts/` | DH-based forward kinematics validation |
+| `test_home_position.py` | `src/ros2_kortex/kortex_bringup/scripts/` | Home position validation against Gazebo |
+| `gen3_lite.urdf` | `src/ros2_kortex/kortex_description/robots/` | Robot URDF (includes gripper mimic joint fix) |
+| `clear_faults.py` | `src/ros2_kortex/kortex_bringup/scripts/` | Fault clearing utility |
 
 ## 🔧 Building from Source
 
@@ -190,7 +194,28 @@ The FK was validated against Gazebo simulation:
 | Joint Configuration | End-Effector Position | Gripper Orientation |
 |---------------------|----------------------|---------------------|
 | `[0, 0, 0, 0, 0, 0]` | (0.057, -0.010, 1.003) m | Pointing UP |
-| `[0.0, 1.0, 2.05, 1.615, 0.55, 0.0]` | Home position | Horizontal (parallel to table) |
+| `[0.0, -1.0, -2.05, -1.615, 0.55, 0.0]` | (-0.213, -0.062, 0.508) m | Horizontal, pointing toward workspace |
+
+## 📐 Workspace Characterization
+
+The Gen3 Lite 6-DOF has a limited reachable workspace compared to longer-armed manipulators:
+
+- **Reachable region** (at table height Z = 0.18m):
+  - Y-range: -0.10m to -0.35m (25cm depth)
+  - X-range: -0.10m to -0.45m (35cm width)
+  - Circular approximation: ~45cm radius from base
+
+- **IK failure zones**:
+  - Y < -0.40m: Too far forward (joint limits exceeded)
+  - Y > -0.10m: Behind robot (physically unreachable)
+  - Combined X-Y distances > 45cm: Outside reach
+
+**Final validated object positions:**
+- Red cube: (-0.25, -0.28, 0.375)
+- Blue cylinder: (-0.10, -0.32, 0.38)
+- Green sphere: (-0.40, -0.25, 0.375)
+- Yellow cube: (-0.15, -0.25, 0.375)
+- Basket: (-0.30, -0.05, 0.365)
 
 ## 🎮 Demo Sequence
 
@@ -218,14 +243,25 @@ The pick-and-place demo performs the following for each object:
 
 1. **IK Failures (-31 NO_IK_SOLUTION)**
    - Objects may be outside robot workspace
-   - Reduce lift height or move objects closer
+   - Gen3 Lite 6-DOF has limited reach: ~45cm radius from base
+   - Keep objects within Y ∈ [-0.10, -0.35] at table height (Z ≈ 0.18m)
+   - Objects beyond Y < -0.40m or Y > -0.10m will fail IK
 
 2. **Arm Spinning**
    - Solved by using joint-space planning instead of pose-based goals
 
 3. **Planning Failures**
-   - Increase `num_planning_attempts` in demo script
+   - Increase `num_planning_attempts` in demo script (default: 15)
    - Check collision geometry in RViz
+   - RRTConnect typically succeeds within first 5-10 attempts
+
+4. **Gripper Not Closing Properly**
+   - Ensure URDF mimic joint fix is applied (multiplier=-0.676, offset=0.149)
+   - Gripper may stall when gripping objects (this is normal)
+
+5. **Slow Simulation in WSL2**
+   - WSL2 runs at 30-50% real-time vs 80-100% on native Linux
+   - Extended timeouts (120s) are set to accommodate slower execution
 
 ## 📚 References
 
