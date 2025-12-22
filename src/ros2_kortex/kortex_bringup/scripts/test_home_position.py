@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Test script to move robot to validated home position.
-Home position: [0.0, 1.0, 2.05, 1.615, 0.55, 0.0]
+Home position: [0.0, -1.0, -2.05, -1.615, 0.55, 0.0]
 Validated to be horizontal (parallel to table).
 """
 

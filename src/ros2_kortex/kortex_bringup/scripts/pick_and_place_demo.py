@@ -101,11 +101,18 @@ class PickAndPlaceDemo(Node):
         # Motion planning settings
         self.use_motion_planning = True  # Use MoveIt planning vs direct IK
         self.planner_id = "RRTConnect"  # Fast bidirectional planner
-        self.planning_time = 10.0  # seconds allowed for planning
-        self.num_planning_attempts = 25  # number of attempts
+        self.planning_time = 5.0  # seconds allowed for planning
+        self.num_planning_attempts = 30  # number of attempts
         
         # Motion timing - stable for simulation
-        self.move_duration = 1.0  # seconds for each motion
+        self.move_duration = 1.0  # seconds for each motion (default)
+
+        # Execution time scaling: multiply planned durations by this factor
+        # <1.0 -> faster execution (compresses time), 1.0 -> unchanged
+        # Tweak this to speed up post-grasp moves (e.g. 0.6 = 40% faster)
+        self.exec_time_scale = 0.5
+        # Maximum trajectory waypoints to send to controller (downsample if larger)
+        self.max_traj_points = 30
         
         # Define pick stations in base_link frame
         # Robot at yaw=0, objects at negative X and Y (further away)
@@ -122,26 +129,26 @@ class PickAndPlaceDemo(Node):
             'red_cube': {
                 'pregrasp': self._create_pose(-0.35, -0.38, 0.21),
                 'grasp': self._create_pose(-0.35, -0.38, 0.18),
-                'basket_approach': self._create_pose(-0.30, -0.03, 0.40),
-                'basket_drop': self._create_pose(-0.30, -0.03, 0.18),
+                'basket_approach': self._create_pose(-0.20, -0.05, 0.30),
+                'basket_drop': self._create_pose(-0.20, -0.05, 0.15),
             },
             'blue_cylinder': {
                 'pregrasp': self._create_pose(-0.10, -0.38, 0.23),
                 'grasp': self._create_pose(-0.10, -0.38, 0.20),
-                'basket_approach': self._create_pose(-0.30, -0.05, 0.40),
-                'basket_drop': self._create_pose(-0.30, -0.05, 0.17),
+                'basket_approach': self._create_pose(-0.27, -0.05, 0.32),
+                'basket_drop': self._create_pose(-0.27, -0.05, 0.21),
             },
             'green_sphere': {
                 'pregrasp': self._create_pose(-0.28, -0.30, 0.21),
                 'grasp': self._create_pose(-0.28, -0.30, 0.18),
-                'basket_approach': self._create_pose(-0.30, -0.07, 0.40),
-                'basket_drop': self._create_pose(-0.30, -0.07, 0.15),
+                'basket_approach': self._create_pose(-0.32, -0.07, 0.40),
+                'basket_drop': self._create_pose(-0.32, -0.07, 0.15),
             },
             'yellow_cube': {
                 'pregrasp': self._create_pose(0.0, -0.25, 0.21),
                 'grasp': self._create_pose(0.0, -0.25, 0.18),
-                'basket_approach': self._create_pose(-0.30, -0.09, 0.40),
-                'basket_drop': self._create_pose(-0.30, -0.09, 0.18),
+                'basket_approach': self._create_pose(-0.35, -0.05, 0.32),
+                'basket_drop': self._create_pose(-0.35, -0.05, 0.18),
             },
         }
         
@@ -153,24 +160,24 @@ class PickAndPlaceDemo(Node):
         self.get_logger().info('Waiting for services and action servers...')
         
         # Wait for services
-        if not self.ik_client.wait_for_service(timeout_sec=10.0):
+        if not self.ik_client.wait_for_service(timeout_sec=5.0):
             self.get_logger().error('IK service not available!')
             return
         if self.use_motion_planning:
-            if not self.plan_client.wait_for_service(timeout_sec=10.0):
+            if not self.plan_client.wait_for_service(timeout_sec=5.0):
                 self.get_logger().warn('Motion planning service not available, falling back to IK')
                 self.use_motion_planning = False
             else:
                 self.get_logger().info(f'Motion planning enabled with {self.planner_id} planner')
-        if not self.trajectory_client.wait_for_server(timeout_sec=10.0):
+        if not self.trajectory_client.wait_for_server(timeout_sec=5.0):
             self.get_logger().error('Joint trajectory action server not available!')
             return
-        if not self.gripper_client.wait_for_server(timeout_sec=10.0):
+        if not self.gripper_client.wait_for_server(timeout_sec=5.0):
             self.get_logger().error('Gripper action server not available!')
             return
         
         # Wait for joint states
-        timeout = 10.0
+        timeout = 5.0
         start = time.time()
         while self.current_joint_state is None and (time.time() - start) < timeout:
             rclpy.spin_once(self, timeout_sec=0.1)
@@ -367,8 +374,9 @@ class PickAndPlaceDemo(Node):
         mp_request.planner_id = self.planner_id
         mp_request.num_planning_attempts = self.num_planning_attempts
         mp_request.allowed_planning_time = self.planning_time
-        mp_request.max_velocity_scaling_factor = 0.8  # 80% of max velocity for faster demo
-        mp_request.max_acceleration_scaling_factor = 0.8  # 80% of max acceleration
+        # Ensure scaling factors are within [0.0, 1.0]. Use 1.0 for full speed.
+        mp_request.max_velocity_scaling_factor = 1.0
+        mp_request.max_acceleration_scaling_factor = 1.0
         
         # Set start state to current state
         mp_request.start_state = RobotState()
@@ -384,8 +392,9 @@ class PickAndPlaceDemo(Node):
             joint_constraint = JointConstraint()
             joint_constraint.joint_name = joint_name
             joint_constraint.position = target_joints[i]
-            joint_constraint.tolerance_above = 0.03  # ~1.1 degrees - relaxed for fewer waypoints
-            joint_constraint.tolerance_below = 0.03
+            # Relax joint tolerances to reduce required waypoints and planning effort
+            joint_constraint.tolerance_above = 0.01  # ~0.57 degrees
+            joint_constraint.tolerance_below = 0.01
             joint_constraint.weight = 1.0
             goal_constraints.joint_constraints.append(joint_constraint)
         
@@ -415,11 +424,57 @@ class PickAndPlaceDemo(Node):
 
     def execute_trajectory(self, trajectory: JointTrajectory):
         """Execute a planned trajectory using the trajectory controller."""
-        goal = FollowJointTrajectory.Goal()
-        goal.trajectory = trajectory
+        # Optionally time-scale the planned trajectory to execute faster/slower
+        if hasattr(self, 'exec_time_scale') and self.exec_time_scale is not None and self.exec_time_scale != 1.0:
+            # Make a shallow copy of trajectory to avoid modifying original
+            scaled_traj = JointTrajectory()
+            scaled_traj.joint_names = list(trajectory.joint_names)
+            scaled_traj.header = trajectory.header
+            for p in trajectory.points:
+                sp = JointTrajectoryPoint()
+                sp.positions = list(p.positions)
+                sp.velocities = list(p.velocities) if p.velocities else []
+                sp.accelerations = list(p.accelerations) if p.accelerations else []
+                # compute original seconds as float
+                orig = float(p.time_from_start.sec) + float(p.time_from_start.nanosec) * 1e-9
+                scaled = max(0.01, orig * float(self.exec_time_scale))
+                sp.time_from_start.sec = int(scaled)
+                sp.time_from_start.nanosec = int((scaled - int(scaled)) * 1e9)
+                scaled_traj.points.append(sp)
+            goal = FollowJointTrajectory.Goal()
+            goal.trajectory = scaled_traj
+        else:
+            goal = FollowJointTrajectory.Goal()
+            goal.trajectory = trajectory
         
-        self.get_logger().info(f'Executing planned trajectory with {len(trajectory.points)} points...')
-        
+        # Optionally downsample trajectory points to reduce controller load
+        send_traj = goal.trajectory
+        orig_points = len(send_traj.points)
+        if hasattr(self, 'max_traj_points') and orig_points > int(self.max_traj_points):
+            # pick evenly spaced indices (include last)
+            maxp = int(self.max_traj_points)
+            indices = []
+            step = float(orig_points - 1) / float(maxp - 1)
+            for i in range(maxp - 1):
+                indices.append(int(round(i * step)))
+            indices.append(orig_points - 1)
+
+            new_traj = JointTrajectory()
+            new_traj.joint_names = list(send_traj.joint_names)
+            new_traj.header = send_traj.header
+            for idx in indices:
+                p = send_traj.points[idx]
+                np = JointTrajectoryPoint()
+                np.positions = list(p.positions)
+                np.velocities = list(p.velocities) if p.velocities else []
+                np.accelerations = list(p.accelerations) if p.accelerations else []
+                np.time_from_start = p.time_from_start
+                new_traj.points.append(np)
+            goal.trajectory = new_traj
+            self.get_logger().info(f'Downsampled trajectory from {orig_points} -> {len(goal.trajectory.points)} points')
+        else:
+            self.get_logger().info(f'Executing planned trajectory with {orig_points} points...')
+
         # Send goal
         future = self.trajectory_client.send_goal_async(goal)
         
@@ -441,7 +496,7 @@ class PickAndPlaceDemo(Node):
         
         # Wait for result
         result_future = goal_handle.get_result_async()
-        max_wall_time = 60.0  # 1 minute should be plenty with faster physics
+        max_wall_time = 60.0  # 2 minutes should be plenty with faster physics
         start_time = time.time()
         
         while not result_future.done() and (time.time() - start_time) < max_wall_time:
@@ -463,7 +518,11 @@ class PickAndPlaceDemo(Node):
         """Move arm to specified joint positions using trajectory controller."""
         if duration is None:
             duration = self.move_duration
-        
+        # Apply execution time scaling (compress or expand duration)
+        if hasattr(self, 'exec_time_scale') and self.exec_time_scale is not None:
+            # exec_time_scale < 1.0 speeds up execution (reduces duration)
+            duration = max(0.02, float(duration) * float(self.exec_time_scale))
+
         # Create trajectory goal
         goal = FollowJointTrajectory.Goal()
         goal.trajectory = JointTrajectory()
@@ -597,7 +656,7 @@ class PickAndPlaceDemo(Node):
         # Wait for result with polling - use short timeout
         # Gripper may stall when gripping object before reaching target
         result_future = goal_handle.get_result_async()
-        max_wall_time = 3.0
+        max_wall_time = 10.0
         start_time = time.time()
         
         while not result_future.done() and (time.time() - start_time) < max_wall_time:
@@ -682,19 +741,30 @@ class PickAndPlaceDemo(Node):
             self.get_logger().info('Step 4: Closing gripper')
             if not self.move_gripper(self.GRIPPER_CLOSED, max_effort=100.0):
                 return False
-            time.sleep(0.3)  # Wait for physics to settle
-            
-            # 5. Lift object high
+            time.sleep(0.1)  # Wait for physics to settle
+
+            # 5. Lift object to a reachable height (with retries/fallback)
             self.get_logger().info('Step 5: Lifting object')
+            grasp_z = station['grasp'].position.z
+            # Prefer a small vertical lift above the grasp to avoid leaving workspace
+            lift_z = min(grasp_z + 0.2, 0.20)
+            closer_x = station['pregrasp'].position.x
+            closer_y = station['pregrasp'].position.y
+            self.get_logger().info(f'Computed lift_z: {lift_z:.3f} (grasp_z={grasp_z:.3f})')
+
             lift_pose = self._create_pose(
-                station['pregrasp'].position.x,
-                station['pregrasp'].position.y,
-                0.40  # Lift to clear obstacles (0.50 is outside workspace)
+                closer_x,
+                closer_y,
+                lift_z
             )
-            time.sleep(0.3) # Wait for physics to settle
+            time.sleep(0.01)  # Wait for physics to settle
 
             if not self.move_to_pose(lift_pose):
-                return False
+                self.get_logger().warn('Lift failed, trying pregrasp position instead...')
+                if not self.move_to_pose(station['pregrasp']):
+                    self.get_logger().error('Both lift and pregrasp moves failed!')
+                    return False
+
             
             # 6. Move above basket (high approach) - use per-object position if available
             self.get_logger().info('Step 6: Moving above basket')
@@ -717,7 +787,8 @@ class PickAndPlaceDemo(Node):
             self.get_logger().info('Step 9: Moving above basket')
             if not self.move_to_pose(basket_approach):
                 return False
-            
+
+           
             self.get_logger().info(f'=== Pick and place for {station_name} completed! ===')
             return True
             
@@ -746,7 +817,7 @@ class PickAndPlaceDemo(Node):
                 failures += 1
                 self.get_logger().warn(f'Failed to process {station}, continuing...')
             
-            time.sleep(1.0)
+            time.sleep(0.2)
         
         self.get_logger().info(f'\n{"="*50}')
         self.get_logger().info(f'Demo completed: {successes} successes, {failures} failures')

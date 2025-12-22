@@ -8,6 +8,7 @@ find_package(ament_cmake_python REQUIRED)
 install(PROGRAMS
   scripts/test_huge_joint_space_jump.py
   scripts/pick_and_place_demo.py
+  scripts/kinova_workspace_sweep.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
